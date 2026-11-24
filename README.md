@@ -103,6 +103,18 @@ Simulated hard power loss on the active owner node (`Stop-VM -Name "SinghVH2" -T
 
 > **Official Cluster Validation Report:** View the full Microsoft Failover Cluster Validation logs at [`evidence/Validation Report 2026.11.17 At 21.19.09.htm`](evidence/Validation%20Report%202026.11.17%20At%2021.19.09.htm) ([XML](evidence/Validation%20Report%202026.11.17%20At%2021.19.09.xml))[cite: 9].
 
+## Real-Time Cluster Observability (Prometheus + Grafana)
+
+Deployed Prometheus `windows_exporter` (v0.32.1 with `hyperv` and `mscluster` collectors) on `SinghVH1` (`192.168.10.31:9182`) and `SinghVH2` (`192.168.10.32:9182`), scraped by a containerized **Prometheus + Grafana** stack (`monitoring/docker-compose.yml`).
+
+* **Cluster Node Health:** Tracks `windows_mscluster_node_state` (`0 = Up`) across both Hyper-V cluster nodes.
+* **Live Migration Ownership Tracking:** Graphs `windows_hyperv_vm_state{state="running"}` per host to visualize `SinghHRApp` shifting between `SinghVH1` and `SinghVH2` in real time.
+* **Host Resource Telemetry:** Monitors Hyper-V host CPU utilization (`windows_cpu_time_seconds_total`), available physical RAM (`windows_memory_available_bytes`), and uptime.
+
+![Grafana Live Migration Telemetry](monitoring/grafana-live-migration-telemetry.png)
+
+> **Reusable Dashboard:** Import [`monitoring/singhcluster-dashboard.json`](monitoring/singhcluster-dashboard.json) directly into Grafana (v11+) with any Prometheus data source.
+
 ## Engineering Lessons & Troubleshooting Solved
 * **CSV Redirected Access & Switch Binding:** Binding an external `Cluster-Switch` to a single-NIC nested node momentarily resets network state; re-verifying persistent iSCSI initiator sessions (`MSiSCSI`) ensures CSV direct I/O remains healthy before VM provisioning.
 * **Nested VM Memory Sizing:** Balanced node RAM allocation (`5 GB` per nested Hyper-V host) prevents host memory commit exhaustion (`0x8007000E`) when recovering crashed cluster nodes alongside active workloads[cite: 6].
