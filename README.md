@@ -127,6 +127,12 @@ To protect against total on-premises site loss beyond single-node Hyper-V failov
   * **Standby Storage:** Standard LRS Storage Account (`singhasrbunker01`) holding replicated `.vhdx` blobs with **₹0 idle compute cost** until a failover is triggered.
   * **Target Failover Network:** `VNet-Singh-DR` (`192.168.10.0/24`) provisioning `Standard_B2s` compute on demand.
 
+  ### Repository Additions
+
+| Path | Description |
+| :--- | :--- |
+| `docs/DR-VALIDATION-REPORT.md` | End-to-end validation log covering Error 68503 remediation, Test Failover blackout drill, live Unplanned Failover, Commit, Reverse Replicate, and Failback. |
+
 ## Engineering Lessons & Troubleshooting Solved
 * **CSV Redirected Access & Switch Binding:** Binding an external `Cluster-Switch` to a single-NIC nested node momentarily resets network state; re-verifying persistent iSCSI initiator sessions (`MSiSCSI`) ensures CSV direct I/O remains healthy before VM provisioning.
 * **Nested VM Memory Sizing:** Balanced node RAM allocation (`5 GB` per nested Hyper-V host) prevents host memory commit exhaustion (`0x8007000E`) when recovering crashed cluster nodes alongside active workloads[cite: 6].
