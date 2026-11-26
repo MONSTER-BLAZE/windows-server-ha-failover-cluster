@@ -113,7 +113,19 @@ Deployed Prometheus `windows_exporter` (v0.32.1 with `hyperv` and `mscluster` co
 
 ![Grafana Live Migration Telemetry](monitoring/grafana-live-migration-telemetry.png)
 
-> **Reusable Dashboard:** Import [`monitoring/singhcluster-dashboard.json`](monitoring/singhcluster-dashboard.json) directly into Grafana (v11+) with any Prometheus data source.
+## Hybrid Off-Site Disaster Recovery (Azure Site Recovery)
+
+To protect against total on-premises site loss beyond single-node Hyper-V failover, `SinghHRApp` is continuously replicated to a cloud **Off-Site Backup Bunker** in **Microsoft Azure** using the **Hyper-V to Azure (without VMM)** architecture.
+
+### Hybrid Architecture Flow
+
+* **On-Premises Cluster (`Singh-HyperV-Cluster`):** Both `SinghVH1` (`192.168.10.31`) and `SinghVH2` (`192.168.10.32`) run the **Azure Site Recovery Provider** and **MARS Agent**, tracking disk changes on `Cluster Disk 2` (CSV) and shipping delta blocks over outbound HTTPS (`TCP 443`) via the Windows 11 NAT gateway (`SinghLabNAT` / `192.168.10.1`).
+* **Cluster-Aware Failover Tracking:** If `SinghHRApp` live-migrates or fails over locally between `SinghVH1` and `SinghVH2`, ASR automatically detects role ownership changes and resumes delta replication from the new owner node.
+* **Azure Control & Storage Plane (`RG-Singh-ASR-Bunker`):**
+  * **Recovery Services Vault:** `RSV-Singh-Bunker` (orchestrates replication policies, health heartbeats, and failover triggers).
+  * **Replication Policy (`Singh-Lab-Policy`):** 5-minute copy frequency, 2-hour recovery point retention, 1-hour app-consistent snapshots (achieving ~5-second RPO in steady state).
+  * **Standby Storage:** Standard LRS Storage Account (`singhasrbunker01`) holding replicated `.vhdx` blobs with **₹0 idle compute cost** until a failover is triggered.
+  * **Target Failover Network:** `VNet-Singh-DR` (`192.168.10.0/24`) provisioning `Standard_B2s` compute on demand.
 
 ## Engineering Lessons & Troubleshooting Solved
 * **CSV Redirected Access & Switch Binding:** Binding an external `Cluster-Switch` to a single-NIC nested node momentarily resets network state; re-verifying persistent iSCSI initiator sessions (`MSiSCSI`) ensures CSV direct I/O remains healthy before VM provisioning.
